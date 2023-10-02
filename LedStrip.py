@@ -30,28 +30,17 @@ class LedStrip(Actuator):
         strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL, LED_STRIP)
         strip.begin()
         
-    def turnOn():
+    def set():
         for i in range(strip.numPixels()):
             strip.setPixelColor(i, Color(255,255,255))
         strip.show()
     
-    def turnOn(r,g,b):
+    def set(r,g,b):
         for i in range(strip.numPixels()):
             strip.setPixelColor(i, Color(r,g,b))
         strip.show()
         
-    def fancyTurnOn(r,g,b,delay):
-        for i in range(strip.numPixels()):
-            strip.setPixelColor(i, Color(r,g,b))
-            strip.show()
-            time.sleep(delay/1000.0)
-            
-    def turnOff():
-        for i in range(strip.numPixels()):
-            strip.setPixelColor(i, Color(0,0,0))
-        strip.show()
-        
-    def fancyTurnOff(delay):
+    def fancySet(r,g,b,delay):
         for i in range(strip.numPixels()):
             strip.setPixelColor(i, Color(r,g,b))
             strip.show()

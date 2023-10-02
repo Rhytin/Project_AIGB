@@ -3,38 +3,47 @@ import Interfaces
 import csv
 import time
 import board
+import bisect
 
 class TestModule:
 
-    eventsInitialised = False
+    testName = "undefined"
+    objects = {}
+    events = {}
+
+    timeDict = {"startTime": time.time()}
+    timeDict["currentTime"] = time.time() - timeDict["startTime"]
+
+    dataLocationDict = {}                       # {key(dataSubject): variable, key(dataSubject): variable}
+                                                # For example dataLocationDict[pH] => pHdata variable
+
+    dataLogDict = {}                            # {key(dataSubject): {timestamp(t): data}, {timestamp(t1): data1}, {timestamp(t2): data2} }
+                                                # For example dataLogDict[pH][timestamp] => pHdata at timestamp
+
 
     def newTest(this, str):
         this.testName = str   
 #exampleTest = testModule.newTest("Example_test")    # Create a test and give it a name, test output will be "testName_output.csv"
 
-    def linkPart(object, str):
-        Objects.append(objects)
-        if isinstance(object, Interfaces.LedStrip):
-            lights = object
+    def linkPart(this, str, object):
+        this.objects[str] = object                                          # Add the given object to the dictionary with the given name
+        if isinstance(object, Interfaces.Sensor):                           # If the given object is a Sensor 
+            this.dataLocationDict |= object.dataDict                        # Add the data output name and where to find it
 
-    def createEvent(this, condition, action):
-        if not eventsInitialised:
-            this.eventsList = [Event.createEvent(condition, action)]
-            eventsInitialised = True
-        else:
-            this.eventsList.append(Event.createEvent(condition, action))
+    def createEvent(this, condition, action):                       
+        eventname = "Event" + str(len(this.events))                         # Create event name
+        temp = Event.createEvent(condition, action, this.timeDict, this.dataLogDict)       # Create the actual event 'Object'
+        this.events[eventname] = temp                                       # Add the event to the dictionary
     
     def runEvents(this):
-        if eventsInitialised == True:
-            for i in range(eventsList):
-                if i.checkCondition() is not i.lastCheckResult:
-                    i.doAction
-        if 
+        for key in this.events:                                             # Iterating will give the keys
+            event = this.events[key]                                        # Get the 'actual' event object, using the key 
+            event.checkCondition()                                          # Check the condition
 
 
 class Condition:
 
-    type = "undefined"
+    definition = {}
 
     def convertTime(lst):
         match (len(lst)):
@@ -48,52 +57,114 @@ class Condition:
                 return (lst[0] + 60*(lst[1] + 60*(lst[2] + 24*lst[3])))
 
     def duration(this, lst):
-        this.type = "duration"
-        this.duration = this.convertTime(lst)
+        this.definition["type"] = "duration"
+        this.definition["startTime"] = time.time()
+        this.definition["duration"] = this.convertTime(lst)
+        this.definition["endTime"] = this.definition["startTime"] + this.definition["duration"]
     
     def valueMax(this, lst):
-        this.type = "max"
-        this.value = lst[0]
-        this.max = lst[1]
+        this.definition["type"] = "max"
+        this.definition["dataKey"] = lst[0]
+        this.definition["max"] = lst[1]
     
     def valueMin(this, lst):
-        this.type = "min"
-        this.value = lst[0]
-        this.min = lst[1]
+        this.definition["type"] = "min"
+        this.definition["dataKey"] = lst[0]
+        this.definition["max"] = lst[1]
 
     def valueUnchanged(this, lst):
-        this.type = "delta"
-        this.value = lst[0]
-        this.deadband = lst[1]
-        this.dTime = this.convertTime(lst[2])
+        this.definition["type"] = "delta"
+        this.definition["dataKey"] = lst[0]
+        this.definition["deadband"] = lst[1]
+        this.definition["startTime"] = time.time()
+        this.definition["deltaTime"] = this.convertTime(lst[2])
+        this.definition["firstCheckTime"] = this.definition["startTime"] + this.definition["deltaTime"]
+
 
 class Action:
 
-    type = "undefined"
+    definition = {}
 
     def stopTest(this, object):
-        this.type = "stop"
-        this.object = object
+        this.definition["type"] = "stop"
+        this.definition["object"] = object
 
     def set(this, object, argument):
-        this.type = "set"
-        this.object = object
-        this.argument = argument
+        this.definition["type"] = "set"
+        this.definition["actuator"] = object
+        this.definition["argument"] = argument
+
 
 class Event:
 
     lastCheckResult = False
+    definition = {}
+    timeDict = {}
+    dataLog = {}
 
-    def createEvent(this, condition, action):
-        this.condition=condition
-        this.action=action
+    def createEvent(this, condition, action, timeDict, dataLog):
+        this.definition["condition"] = condition
+        this.definition["action"] = action
+        this.timeDict = timeDict
+        this.dataLog = dataLog
 
-        match condition.type:
+        match condition.definition["type"]:
             case "duration":
+                condition.definition["startTime"] = condition.definition["startTime"]-this.timeDict["startTime"]
+                condition.definition["endTime"] = condition.definition["endTime"]-this.timeDict["startTime"]
 
-    def checkCondition():
-        return #Succeeded?
+            case "delta":
+                condition.definition["startTime"] = condition.definition["startTime"]-this.timeDict["startTime"]
+                condition.definition["firstCheckTime"] = condition.definition["firstCheckTime"]-this.timeDict["startTime"]
 
+    def checkCondition(this):
+        condition = this.definition["condition"]
+        passed = this.lastCheckResult
+
+        match condition.definition["type"]:
+
+            case "duration":
+                if (this.timeDict["CurrentTime"] > condition.definition["endTime"]):
+                    passed = True
+
+            case "min":
+                dataKey = condition.definition["dataKey"]                   # For example, dataKey "Temperature"      
+                specificDataDict = this.dataLog[dataKey]                    # this.dataLog["Temperature"] gives the temperature dict
+                lastKey = list(specificDataDict.keys())[-1]                 # get the last key of the temperature dict
+                lastEntry = specificDataDict[lastKey]                       # get the corresponding value from the last key
+
+                if (lastEntry < condition.definition["min"]):
+                    passed = True
+
+            case "max":
+                dataKey = condition.definition["dataKey"]                   # For example, dataKey "Temperature"      
+                specificDataDict = this.dataLog[dataKey]                    # this.dataLog["Temperature"] gives the temperature dict
+                lastKey = list(specificDataDict.keys())[-1]                 # get the last key of the temperature dict
+                lastEntry = specificDataDict[lastKey]                       # get the corresponding value from the last key
+
+                if (lastEntry > condition.definition["max"]):
+                    passed = True
+
+            case "delta":
+                if (this.timeDict["currentTime"] > condition.definition["firstCheckTime"]):                  # First check if the deltaTime has passed
+                    dataKey = condition.definition["dataKey"]
+                    specificDataDict = this.dataLog[dataKey]                    # this.dataLog["Temperature"] gives the temperature dict
+                    lastKey = list(specificDataDict.keys())[-1]                 # get the last key of the temperature dict
+                    lastEntry = specificDataDict[lastKey]                       # get the corresponding value from the last key
+                    deltaEntry = bisect.bisect_left(specificDataDict, int(lastKey)-int(condition.definition["deltaTime"]))
+                    #get closest datapoint
+
+
+                    passed = True
+
+
+
+        if (passed and (passed is not this.lastCheckResult)):
+            this.doAction()
+            this.lastCheckResult = passed
+        else:
+            this.lastCheckResult = passed
+    
     def doAction(this):
         match this.action.type:
             case "stop":

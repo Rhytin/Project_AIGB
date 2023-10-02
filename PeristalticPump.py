@@ -26,11 +26,8 @@ class PeristalticPump(Actuator):
             pi_pwm = GPIO.PWM(this.pin, 1000)
             pi_pwm.start(0)
         
-    def turnOn(this):
+    def set(this):
         GPIO.output(this.pin, 1)
         
-    def turnOn(this, pwm):
+    def set(this, pwm):
         GPIO.PWM(this.pin, pwm)
-        
-    def turnOff(this):
-        GPIO.output(this.pin, 0)

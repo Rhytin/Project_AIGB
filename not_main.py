@@ -33,23 +33,14 @@ co2Sensor = Interfaces.CO2Sensor("CO2 sensor")                                  
 exampleTest = testModule.newTest("Example_test")    # Create a test and give it a name, test output will be "testName_output.csv"
 
 #________________________________________ Used parts !!! ________________________________________________
-# Link used parts, syntax: (Object, optional arguments)
+# Link used parts, syntax: (Name, Object)
 
-exampleTest.linkPart(leds, [255, 255, 255])         # Optional argument for leds is: [r,g,b]
-exampleTest.linkPart(pPump1, 75)                    # Optional argument for peristaltic pumps is a PWM value (0-100)
-exampleTest.linkPart(waterPumps)                    # Waterpumps, fans and the cooling dont have optional arguments, they'll just be turned on 
-
-exampleTest.linkPart(tempHumSensor,                 # Optional arguments are what values you want to use: (Still optional, will use everything without arguments)
-                    True,                           # Temperature
-                    True,                           # Humidity
-                    True)                           # Pressure
-
-exampleTest.linkPart(condPHSensor,                  # Optional arguments are what values you want to use: (Still optional, will use everything without arguments)
-                    True,                           # Conductivity
-                    True,                           # pH
-                    False)                          # Temperature
-
-exampleTest.linkPart(co2Sensor)                     # Has no optional arguments
+exampleTest.linkPart("Lights", leds)
+exampleTest.linkPart("Base pump", pPump1)
+exampleTest.linkPart("Water pumps", waterPumps)
+exampleTest.linkPart("THPSensor", tempHumSensor)
+exampleTest.linkPart("CpHSensor", condPHSensor)
+exampleTest.linkPart("CO2Sensor", co2Sensor)
 
 #________________________________________ End conditions !!! ____________________________________________
 # Times are given in [Seconds, Minutes, Hours, Days], you can leave later ones out
@@ -59,13 +50,13 @@ testCondition1 = testModule.duration([0, 0, 3])             # After 3 hours ...
 testAction1 = testModule.stopTest                           # Stop the test
 exampleTest.createEvent(testCondition1, testAction1)        # Link condition and action to create an event for given test
 
-testCondition2 = testModule.valueMax(["ph", 6])             # If value is larger than this number
-testAction2 = testModule.set("basePump", False)             # Set *device* to: True (on), False (off), [r,g,b] (led color), *number* (pwm)                          
+testCondition2 = testModule.valueMax(["pH", 6])             # If value is larger than this number
+testAction2 = testModule.set("Base pump", False)             # Set *device* to: True (on), False (off), [r,g,b] (led color), *number* (pwm)                          
 exampleTest.createEvent(testCondition2, testAction2)        # If the pH goes above 6 pH, turn the base pump off
 
-testCondition3 = testModule.valueMin(["temperature", 30])   # If temperature is lower than 30 degrees
-testAction3 = testModule.set("lights", [255,0,255])         # Turn the lights on with a purple colour
-testAction4 = testModule.set("fans", False)                 # And also turn the fans off
+testCondition3 = testModule.valueMin(["Air Temperature", 30])   # If temperature is lower than 30 degrees
+testAction3 = testModule.set("Lights", [255,0,255])         # Turn the lights on with a purple colour
+testAction4 = testModule.set("Fans", False)                 # And also turn the fans off
 exampleTest.createEvent(testCondition3, testAction3)        # Link both actions to the same condition
 exampleTest.createEvent(testCondition3, testAction4)        # .....
 
